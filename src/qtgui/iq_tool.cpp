@@ -28,7 +28,7 @@
 #include <QPalette>
 #include <QString>
 #include <QStringList>
-#include <QTime>
+#include <QScrollBar>
 
 #include <math.h>
 
@@ -52,6 +52,7 @@ CIqTool::CIqTool(QWidget *parent) :
     //ui->recDirEdit->setText(QDir::currentPath());
 
     recdir = new QDir(QDir::homePath(), "*.raw");
+    recdir->setNameFilters(recdir->nameFilters() << "*.sigmf-data");
 
     error_palette = new QPalette();
     error_palette->setColor(QPalette::Text, Qt::red);
@@ -173,7 +174,7 @@ void CIqTool::on_recButton_clicked(bool checked)
     if (checked)
     {
         ui->playButton->setEnabled(false);
-        emit startRecording(recdir->path());
+        emit startRecording(recdir->path(), ui->formatCombo->currentText());
 
         refreshDir();
         ui->listWidget->setCurrentRow(ui->listWidget->count()-1);
@@ -235,6 +236,11 @@ void CIqTool::saveSettings(QSettings *settings)
     else
         settings->remove("baseband/rec_dir");
 
+    QString format = ui->formatCombo->currentText();
+    if (format != "Raw")
+        settings->setValue("baseband/rec_format", format);
+    else
+        settings->remove("baseband/rec_format");
 }
 
 void CIqTool::readSettings(QSettings *settings)
@@ -245,6 +251,10 @@ void CIqTool::readSettings(QSettings *settings)
     // Location of baseband recordings
     QString dir = settings->value("baseband/rec_dir", QDir::homePath()).toString();
     ui->recDirEdit->setText(dir);
+
+    // Format of baseband recordings
+    QString format = settings->value("baseband/rec_format", "Raw").toString();
+    ui->formatCombo->setCurrentText(format);
 }
 
 
@@ -302,6 +312,8 @@ void CIqTool::timeoutFunction(void)
 void CIqTool::refreshDir()
 {
     int selection = ui->listWidget->currentRow();
+    QScrollBar * sc = ui->listWidget->verticalScrollBar();
+    int lastScroll = sc->sliderPosition();
 
     recdir->refresh();
     QStringList files = recdir->entryList();
@@ -310,6 +322,7 @@ void CIqTool::refreshDir()
     ui->listWidget->clear();
     ui->listWidget->insertItems(0, files);
     ui->listWidget->setCurrentRow(selection);
+    sc->setSliderPosition(lastScroll);
     ui->listWidget->blockSignals(false);
 
     if (is_recording)

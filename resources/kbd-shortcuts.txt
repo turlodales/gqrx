@@ -11,6 +11,8 @@ Main window actions:
  Ctrl+C         Open DX cluster dialog
  F11            Toggle full screen mode
  F              Set focus to the frequency controller
+ Z              Zero frequency offset
+ Delete         Clear waterfall
  Ctrl+Q         Quit the program
 
 Receiver modes:
@@ -18,15 +20,15 @@ Receiver modes:
  !              Demod off
  I              Raw I/Q
  A              AM
+ Shift+A        AM sync
  N              NFM
  W              WFM mono
  Shift+W        WFM stereo
+ O              WFM oirt
  S              LSB  (memo: lower SSB)
  Shift+S        USB  (memo: upper SSB)
  C              CW-L (memo: lower CW)
  Shift+C        CW-U (memo: upper CW)
- O              WFM oirt
- Shift+A        AM sync
 
 Squelch:
 

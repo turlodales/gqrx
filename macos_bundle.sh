@@ -1,10 +1,13 @@
 #!/bin/bash -e
 
-GQRX_VERSION=$(<version.txt)
+GQRX_VERSION="$(<build/version.txt)"
 IDENTITY=Y3GC27WZ4S
+BREW_PREFIX="$(brew --prefix)"
+MACDEPLOYQT6="${BREW_PREFIX}"/opt/qt@6/bin/macdeployqt
 
 mkdir -p Gqrx.app/Contents/MacOS
 mkdir -p Gqrx.app/Contents/Resources
+mkdir -p Gqrx.app/Contents/soapy-modules
 
 /bin/cat <<EOM >Gqrx.app/Contents/Info.plist
 <?xml version="1.0" encoding="UTF-8"?>
@@ -13,8 +16,6 @@ mkdir -p Gqrx.app/Contents/Resources
 <dict>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
-  <key>CFBundleGetInfoString</key>
-  <string>Gqrx</string>
   <key>CFBundleExecutable</key>
   <string>gqrx</string>
   <key>CFBundleIdentifier</key>
@@ -50,16 +51,24 @@ EOM
 
 cp build/src/gqrx Gqrx.app/Contents/MacOS
 cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
-cp -r /usr/local/lib/SoapySDR/modules* Gqrx.app/Contents/soapy-modules
+# NOTE: PlutoSDR is built locally, so it will not in the brew path
+cp /usr/local/lib/SoapySDR/modules*/libPlutoSDRSupport.so Gqrx.app/Contents/soapy-modules
+cp "${BREW_PREFIX}"/lib/SoapySDR/modules*/libremoteSupport.so Gqrx.app/Contents/soapy-modules
 chmod 644 Gqrx.app/Contents/soapy-modules/*
 
-dylibbundler -s /usr/local/opt/icu4c/lib/ -od -b -x Gqrx.app/Contents/MacOS/gqrx -x Gqrx.app/Contents/soapy-modules/libPlutoSDRSupport.so -x Gqrx.app/Contents/soapy-modules/libremoteSupport.so -d Gqrx.app/Contents/libs/
-ln -sf /usr/local/opt/python@3.9/Frameworks/Python.framework /usr/local/opt/python@3.9/lib/Python.framework
-/usr/local/opt/qt@6/bin/macdeployqt Gqrx.app -no-strip -always-overwrite # TODO: Remove macdeployqt workaround
-/usr/local/opt/qt@6/bin/macdeployqt Gqrx.app -no-strip -always-overwrite -sign-for-notarization=$IDENTITY
-cp /usr/local/lib/libbrotlicommon.1.dylib Gqrx.app/Contents/Frameworks # TODO: Remove macdeployqt workaround
+dylibbundler -s "${BREW_PREFIX}"/opt/icu4c/lib/ -od -b -x Gqrx.app/Contents/MacOS/gqrx -x Gqrx.app/Contents/soapy-modules/libPlutoSDRSupport.so -x Gqrx.app/Contents/soapy-modules/libremoteSupport.so -d Gqrx.app/Contents/libs/
+"${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite # TODO: Remove macdeployqt workaround
+if [ "$1" = "true" ]; then
+    "${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}"
+else
+    "${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite
+fi
 
-for f in Gqrx.app/Contents/libs/*.dylib Gqrx.app/Contents/soapy-modules/*.so Gqrx.app/Contents/Frameworks/Python.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python Gqrx.app/Contents/Frameworks/*.framework Gqrx.app/Contents/Frameworks/libbrotlicommon.1.dylib Gqrx.app/Contents/MacOS/gqrx
+for f in Gqrx.app/Contents/libs/*.dylib Gqrx.app/Contents/soapy-modules/*.so Gqrx.app/Contents/Frameworks/*.framework Gqrx.app/Contents/Frameworks/*.dylib Gqrx.app/Contents/MacOS/gqrx
 do
-    codesign --force --verify --verbose --timestamp --options runtime --entitlements /tmp/Entitlements.plist --sign $IDENTITY $f
+    if [ "$1" = "true" ]; then
+        codesign --force --verify --verbose --timestamp --options runtime --entitlements /tmp/Entitlements.plist --sign "${IDENTITY}" "$f"
+    else
+        codesign --remove-signature "$f"
+    fi
 done

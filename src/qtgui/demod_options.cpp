@@ -44,10 +44,10 @@ int tau_to_index(double tau)
     int i;
     for (i = 0; i < tau_tbl_maxidx; i++)
     {
-        if (tau < (tau_tbl[i] + 0.5 * (tau_tbl[i+1] - tau_tbl[i])))
+        if (tau < (tau_tbl[i] + tau_tbl[i+1]) / 2)
             return i;
     }
-    return 0;
+    return tau_tbl_maxidx;
 }
 
 /* convert betweenFM max dev and combo index */
@@ -76,13 +76,13 @@ float maxdev_from_index(int index)
 
 int maxdev_to_index(float max_dev)
 {
-    if (max_dev < 3000.0)
+    if (max_dev < 3000.0f)
         /* Voice 2.5k */
         return 0;
-    else if (max_dev < 10000.0)
+    else if (max_dev < 10000.0f)
         /* Voice 5k */
         return 1;
-    else if (max_dev < 20000.0)
+    else if (max_dev < 20000.0f)
         /* APT 17k */
         return 2;
     else
@@ -112,13 +112,13 @@ static float pll_bw_from_index(int index)
 
 static int pll_bw_to_index(float pll_bw)
 {
-    if (pll_bw < 0.00015)
+    if (pll_bw < 0.00015f)
         /* Slow */
         return 2;
-    else if (pll_bw < 0.0015)
+    else if (pll_bw < 0.0015f)
         /* Medium */
         return 1;
-    else if (pll_bw < 0.015)
+    else if (pll_bw < 0.015f)
         /* Fast */
         return 0;
     else
@@ -192,6 +192,26 @@ double CDemodOptions::getEmph(void) const
     return tau_from_index(ui->emphSelector->currentIndex());
 }
 
+void CDemodOptions::setDcr(bool enabled)
+{
+    ui->dcrCheckBox->setChecked(enabled);
+}
+
+bool CDemodOptions::getDcr(void) const
+{
+    return ui->dcrCheckBox->isChecked();
+}
+
+void CDemodOptions::setSyncDcr(bool enabled)
+{
+    ui->syncdcrCheckBox->setChecked(enabled);
+}
+
+bool CDemodOptions::getSyncDcr(void) const
+{
+    return ui->syncdcrCheckBox->isChecked();
+}
+
 void CDemodOptions::on_maxdevSelector_activated(int index)
 {
     emit fmMaxdevSelected(maxdev_from_index(index));
@@ -202,7 +222,7 @@ void CDemodOptions::on_emphSelector_activated(int index)
     emit fmEmphSelected(tau_from_index(index));
 }
 
-void CDemodOptions::on_dcrCheckBox_toggled(bool checked)
+void CDemodOptions::on_dcrCheckBox_clicked(bool checked)
 {
     emit amDcrToggled(checked);
 }
@@ -212,7 +232,7 @@ void CDemodOptions::on_cwOffsetSpin_valueChanged(int value)
     emit cwOffsetChanged(value);
 }
 
-void CDemodOptions::on_syncdcrCheckBox_toggled(bool checked)
+void CDemodOptions::on_syncdcrCheckBox_clicked(bool checked)
 {
     emit amSyncDcrToggled(checked);
 }

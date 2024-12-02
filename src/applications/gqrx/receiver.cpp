@@ -47,6 +47,7 @@
 #endif
 
 #define DEFAULT_AUDIO_GAIN -6.0
+#define WAV_FILE_GAIN 0.5
 #define TARGET_QUAD_RATE 1e6
 
 /**
@@ -115,9 +116,9 @@ receiver::receiver(const std::string input_device,
 
     iq_swap = make_iq_swap_cc(false);
     dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
-    iq_fft = make_rx_fft_c(8192u, d_decim_rate, gr::fft::window::WIN_HANN);
+    iq_fft = make_rx_fft_c(DEFAULT_FFT_SIZE, d_decim_rate, gr::fft::window::WIN_HANN);
 
-    audio_fft = make_rx_fft_f(8192u, d_audio_rate, gr::fft::window::WIN_HANN);
+    audio_fft = make_rx_fft_f(DEFAULT_FFT_SIZE, d_audio_rate, gr::fft::window::WIN_HANN);
     audio_gain0 = gr::blocks::multiply_const_ff::make(0);
     audio_gain1 = gr::blocks::multiply_const_ff::make(0);
     set_af_gain(DEFAULT_AUDIO_GAIN);
@@ -739,21 +740,31 @@ void receiver::set_iq_fft_size(int newsize)
     iq_fft->set_fft_size(newsize);
 }
 
-void receiver::set_iq_fft_window(int window_type)
+unsigned int receiver::iq_fft_size() const
 {
-    iq_fft->set_window_type(window_type);
+    return iq_fft->fft_size();
+}
+
+void receiver::set_iq_fft_window(int window_type, bool normalize_energy)
+{
+    iq_fft->set_window_type(window_type, normalize_energy);
 }
 
 /** Get latest baseband FFT data. */
-void receiver::get_iq_fft_data(std::complex<float>* fftPoints, unsigned int &fftsize)
+int receiver::get_iq_fft_data(float* fftPoints)
 {
-    iq_fft->get_fft_data(fftPoints, fftsize);
+    return iq_fft->get_fft_data(fftPoints);
+}
+
+unsigned int receiver::audio_fft_size() const
+{
+    return audio_fft->fft_size();
 }
 
 /** Get latest audio FFT data. */
-void receiver::get_audio_fft_data(std::complex<float>* fftPoints, unsigned int &fftsize)
+int receiver::get_audio_fft_data(float* fftPoints)
 {
-    audio_fft->get_fft_data(fftPoints, fftsize);
+    return audio_fft->get_fft_data(fftPoints);
 }
 
 receiver::status receiver::set_nb_on(int nbid, bool on)
@@ -975,7 +986,7 @@ receiver::status receiver::set_af_gain(float gain_db)
     float k;
 
     /* convert dB to factor */
-    k = pow(10.0, gain_db / 20.0);
+    k = powf(10.0f, gain_db / 20.0f);
     //std::cout << "G:" << gain_db << "dB / K:" << k << std::endl;
     audio_gain0->set_k(k);
     audio_gain1->set_k(k);
@@ -1010,6 +1021,9 @@ receiver::status receiver::start_audio_recording(const std::string filename)
         return STATUS_ERROR;
     }
 
+    wav_gain0 = gr::blocks::multiply_const_ff::make(WAV_FILE_GAIN);
+    wav_gain1 = gr::blocks::multiply_const_ff::make(WAV_FILE_GAIN);
+
     // if this fails, we don't want to go and crash now, do we
     try {
 #if GNURADIO_VERSION < 0x030900
@@ -1028,8 +1042,10 @@ receiver::status receiver::start_audio_recording(const std::string filename)
     }
 
     tb->lock();
-    tb->connect(rx, 0, wav_sink, 0);
-    tb->connect(rx, 1, wav_sink, 1);
+    tb->connect(rx, 0, wav_gain0, 0);
+    tb->connect(rx, 1, wav_gain1, 0);
+    tb->connect(wav_gain0, 0, wav_sink, 0);
+    tb->connect(wav_gain1, 0, wav_sink, 1);
     tb->unlock();
     d_recording_wav = true;
 
@@ -1058,15 +1074,19 @@ receiver::status receiver::stop_audio_recording()
     // not strictly necessary to lock but I think it is safer
     tb->lock();
     wav_sink->close();
-    tb->disconnect(rx, 0, wav_sink, 0);
-    tb->disconnect(rx, 1, wav_sink, 1);
+    tb->disconnect(rx, 0, wav_gain0, 0);
+    tb->disconnect(rx, 1, wav_gain1, 0);
+    tb->disconnect(wav_gain0, 0, wav_sink, 0);
+    tb->disconnect(wav_gain1, 0, wav_sink, 1);
 
     // Temporary workaround for https://github.com/gnuradio/gnuradio/issues/5436
     tb->disconnect(ddc, 0, rx, 0);
     tb->connect(ddc, 0, rx, 0);
-    // End temporary workaronud
+    // End temporary workaround
 
     tb->unlock();
+    wav_gain0.reset();
+    wav_gain1.reset();
     wav_sink.reset();
     d_recording_wav = false;
 
@@ -1294,7 +1314,7 @@ receiver::status receiver::stop_sniffer()
     // Temporary workaround for https://github.com/gnuradio/gnuradio/issues/5436
     tb->disconnect(ddc, 0, rx, 0);
     tb->connect(ddc, 0, rx, 0);
-    // End temporary workaronud
+    // End temporary workaround
 
     tb->disconnect(sniffer_rr, 0, sniffer, 0);
     tb->unlock();
@@ -1385,8 +1405,10 @@ void receiver::connect_all(rx_chain type)
     // Recorders and sniffers
     if (d_recording_wav)
     {
-        tb->connect(rx, 0, wav_sink, 0);
-        tb->connect(rx, 1, wav_sink, 1);
+        tb->connect(rx, 0, wav_gain0, 0);
+        tb->connect(rx, 1, wav_gain1, 0);
+        tb->connect(wav_gain0, 0, wav_sink, 0);
+        tb->connect(wav_gain1, 0, wav_sink, 1);
     }
 
     if (d_sniffer_active)

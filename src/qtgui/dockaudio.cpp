@@ -38,15 +38,6 @@ DockAudio::DockAudio(QWidget *parent) :
 {
     ui->setupUi(this);
 
-#ifdef Q_OS_LINUX
-    // buttons can be smaller than 50x32
-    ui->audioMuteButton->setMinimumSize(48, 24);
-    ui->audioStreamButton->setMinimumSize(48, 24);
-    ui->audioRecButton->setMinimumSize(48, 24);
-    ui->audioPlayButton->setMinimumSize(48, 24);
-    ui->audioConfButton->setMinimumSize(48, 24);
-#endif
-
     audioOptions = new CAudioOptions(this);
 
     connect(audioOptions, SIGNAL(newFftSplit(int)), ui->audioSpectrum, SLOT(setPercent2DScreen(int)));
@@ -69,11 +60,11 @@ DockAudio::DockAudio(QWidget *parent) :
     ui->audioSpectrum->setFilterBoxEnabled(false);
     ui->audioSpectrum->setCenterLineEnabled(false);
     ui->audioSpectrum->setBookmarksEnabled(false);
-    ui->audioSpectrum->setBandPlanEnabled(false);
+    ui->audioSpectrum->enableBandPlan(false);
     ui->audioSpectrum->setFftRange(-80., 0.);
     ui->audioSpectrum->setVdivDelta(40);
-    ui->audioSpectrum->setHdivDelta(40);
     ui->audioSpectrum->setFreqDigits(1);
+    ui->audioSpectrum->setRunningState(true);
 
     QShortcut *rec_toggle_shortcut = new QShortcut(QKeySequence(Qt::Key_R), this);
     QShortcut *mute_toggle_shortcut = new QShortcut(QKeySequence(Qt::Key_M), this);
@@ -122,6 +113,23 @@ void DockAudio::setAudioGain(int gain)
     ui->audioGainSlider->setValue(gain);
 }
 
+/*! \brief Set new audio gain.
+ *  \param gain the new audio gain in dB
+ */
+void DockAudio::setAudioGainDb(float gain)
+{
+    ui->audioGainSlider->setValue(int(std::round(gain*10.0f)));
+}
+
+/*! \brief Set audio muted
+ *  \param muted true if audio should be muted
+ */
+void DockAudio::setAudioMuted(bool muted)
+{
+    ui->audioMuteButton->setChecked(!muted);
+    ui->audioMuteButton->click();
+}
+
 
 /*! \brief Get current audio gain.
  *  \returns The current audio gain in tens of dB (0 dB = 10).
@@ -140,7 +148,7 @@ void DockAudio::setFftColor(QColor color)
 /*! Enable/disable filling area under FFT plot. */
 void DockAudio::setFftFill(bool enabled)
 {
-    ui->audioSpectrum->setFftFill(enabled);
+    ui->audioSpectrum->enableFftFill(enabled);
 }
 
 /*! Public slot to trig audio recording by external events (e.g. satellite AOS).
@@ -187,10 +195,10 @@ void DockAudio::setWfColormap(const QString &cmap)
  */
 void DockAudio::on_audioGainSlider_valueChanged(int value)
 {
-    float gain = float(value) / 10.0;
+    float gain = float(value) / 10.0f;
 
     // update dB label
-    ui->audioGainDbLabel->setText(QString("%1 dB").arg(gain, 5, 'f', 1));
+    ui->audioGainDbLabel->setText(QString("%1 dB").arg((double)gain, 5, 'f', 1));
     if (!ui->audioMuteButton->isChecked())
         emit audioGainChanged(gain);
 }
@@ -286,9 +294,10 @@ void DockAudio::on_audioMuteButton_clicked(bool checked)
     else
     {
         int value = ui->audioGainSlider->value();
-        float gain = float(value) / 10.0;
+        float gain = float(value) / 10.0f;
         emit audioGainChanged(gain);
     }
+    emit audioMuted(checked);
 }
 
 /*! \brief Set status of audio record button. */

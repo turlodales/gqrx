@@ -1,4 +1,124 @@
 
+    2.17.6: Released November 29, 2024
+
+       NEW: Fetch RDS Program Service & RadioText via remote control.
+       NEW: Set and query audio mute via remote control.
+       NEW: DMG release for ARM-based Macs.
+  IMPROVED: Save I/Q recording format to settings.
+  IMPROVED: Reduced CPU utilization of plot and waterfall display.
+  IMPROVED: Display and formatting of RDS data.
+     FIXED: Decoding of RDS flags.
+     FIXED: Incorrect channel filter offset, for some devices.
+   CHANGED: x86 DMG release requires macOS 13.7 or later.
+
+
+    2.17.5: Released April 18, 2024
+
+       NEW: PlutoSDR and LimeSDR support in AppImage release, via SoapySDR.
+       NEW: Airspy support in Windows binary release.
+  IMPROVED: Updated GNU Radio, SDR driver, and Qt versions in AppImage release.
+     FIXED: Respond correctly to pipelined remote control commands.
+     FIXED: Limit UDP packet size to 1024, for compatibility with netcat.
+   REMOVED: FreeSRP support in AppImage release.
+
+
+    2.17.4: Released February 9, 2024
+
+       NEW: Experimental Windows binary release (RTL-SDR only).
+  IMPROVED: Respond to \chk_vfo remote command (needed by some clients).
+  IMPROVED: Respond to \get_powerstat remote command (needed by some clients).
+
+
+    2.17.3: Released October 20, 2023
+
+     FIXED: Delete key shortcut for bookmark removal.
+
+
+    2.17.2: Released October 9, 2023
+
+       NEW: FORCE_QT6 and FORCE_QT5 CMake options to force Qt version.
+
+
+    2.17.1: Released October 9, 2023
+
+       NEW: Delete key clears the waterfall.
+       NEW: I/Q tool can save recordings in SigMF format.
+       NEW: Holding Ctrl speeds up mouse wheel zoom.
+  IMPROVED: Reduced CPU utilization of waterfall display.
+   CHANGED: DMG release requires macOS 12.7 or later.
+
+
+      2.17: Released October 1, 2023
+
+       NEW: "Avg" plot mode, which displays average of FFT bins.
+       NEW: "Fill" plot mode, which displays both maximum & average of FFT bins.
+       NEW: "Histogram" plot mode, which displays distribution of FFT bins.
+       NEW: Selectable plot scaling: dBFS, dBV/RBW, dbV/√Hz, dBm/RBW, dBm/Hz.
+       NEW: Min hold line in plot.
+       NEW: A/B measurement markers on plot.
+       NEW: Plot tooltip displays delta from demod frequency.
+       NEW: Dropped frames are indicated by red background in FFT Settings panel.
+       NEW: "Avg" waterfall mode, which displays average of FFT bins.
+       NEW: "Sync" waterfall mode, which mirrors averaged data from plot.
+       NEW: Support for RTL-SDR Blog V4 in AppImage and DMG releases.
+       NEW: Save FFT plot center frequency in settings.
+  IMPROVED: Peak detection algorithm.
+  IMPROVED: Peak detection uses peak hold data when available.
+  IMPROVED: Maximum FFT size increased to 4M.
+  IMPROVED: Maximum frame rate increased to 500.
+  IMPROVED: Averaging slider is consistent across frame rates.
+  IMPROVED: Visibility of text in axes.
+  IMPROVED: Full support for high-DPI screens in plot & waterfall.
+  IMPROVED: Plot & waterfall performance.
+  IMPROVED: Plot can be zoomed & resized while DSP is stopped.
+  IMPROVED: FFT window setting is stored as a string.
+  IMPROVED: Waterfall span setting is stored in milliseconds.
+  IMPROVED: Added 6 dB attenuation to WAV file recordings to prevent clipping.
+  IMPROVED: Use logarithmic scale for frequency zoom slider.
+  IMPROVED: Reduced CPU utilization of demodulators.
+  IMPROVED: Properly handle smooth scrolling.
+  IMPROVED: Shorten band names to fit in narrow spaces.
+  IMPROVED: Delay plot & waterfall drawing until samples arrive from hardware.
+   CHANGED: Frequency zoom slider zooms around center of display.
+   CHANGED: Disallow scrolling beyond the FFT frequency limits.
+   CHANGED: Default narrow FM deviation increased to 5 kHz.
+     FIXED: Time on waterfall is calculated correctly.
+     FIXED: Frequency is correctly rounded in I/Q filenames.
+     FIXED: Crash in AFSK1200 decoder.
+     FIXED: Hang when setting a very narrow filter width.
+     FIXED: Inconsistent 1-2-5 scaling of amplitude axis.
+   REMOVED: "Save waterfall" feature.
+
+
+      2.16: Released April 28, 2023
+
+       NEW: Restore AM & AM-Sync settings between sessions.
+       NEW: Set/get audio gain via remote control.
+       NEW: Only show bookmarks for active tag groups in the panadapter.
+     FIXED: Loading of narrow FM tau setting.
+     FIXED: Crash when adding or removing bookmark tags.
+     FIXED: Redraw bookmarks immediately after changes.
+     FIXED: DX cluster spots fail to expire around midnight.
+     FIXED: AGC sensitivity bug introduced in version 2.15.10.
+  IMPROVED: Rendering of frequency control and S-meter on some high-DPI screens.
+   REMOVED: Support for GNU Radio 3.7.
+
+
+   2.15.10: Released April 13, 2023
+
+       NEW: Restore FFT zoom level between sessions.
+       NEW: Restore peak detect & peak hold between sessions.
+       NEW: "Z" keyboard shortcut sets frequency offset to zero.
+     FIXED: Remove empty frame from bottom of I/Q tool window.
+     FIXED: Sudden scrolling of file list in I/Q tool window.
+     FIXED: Reset zoom slider after right click on panadapter / waterfall.
+     FIXED: Aliasing when input rate is higher than 2 Msps.
+  IMPROVED: AGC performance.
+  IMPROVED: WFM stereo & OIRT performance.
+  IMPROVED: I/Q swap performance.
+  IMPROVED: Apply amplitude normalization to FFT window functions.
+
+
     2.15.9: Released April 9, 2022
 
        NEW: Qt 6 support.

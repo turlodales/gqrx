@@ -43,12 +43,16 @@ RemoteControl::RemoteControl(QObject *parent) :
     rc_passband_lo = 0;
     rc_passband_hi = 0;
     rc_program_id = "0000";
+    rds_station = QString("");
+    rds_radiotext = QString("");
     rds_status = false;
     signal_level = -200.0;
     squelch_level = -150.0;
+    audio_gain = -6.0;
     audio_recorder_status = false;
     receiver_running = false;
     hamlib_compatible = false;
+    is_audio_muted = false;
 
     rc_port = DEFAULT_RC_PORT;
     rc_allowed_hosts.append(DEFAULT_RC_ALLOWED_HOSTS);
@@ -192,76 +196,82 @@ void RemoteControl::acceptConnection()
  */
 void RemoteControl::startRead()
 {
-    char    buffer[1024] = {0};
-    int     bytes_read;
-    QString answer = "";
+    while (rc_socket->canReadLine()) {
+        char    buffer[1024] = {0};
+        int     bytes_read;
+        QString answer = "";
 
-    bytes_read = rc_socket->readLine(buffer, 1024);
-    if (bytes_read < 2)  // command + '\n'
-        return;
+        bytes_read = rc_socket->readLine(buffer, 1024);
+        if (bytes_read < 2)  // command + '\n'
+            continue;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
-    QStringList cmdlist = QString(buffer).trimmed().split(" ", QString::SkipEmptyParts);
+        QStringList cmdlist = QString(buffer).trimmed().split(" ", QString::SkipEmptyParts);
 #else
-    QStringList cmdlist = QString(buffer).trimmed().split(" ", Qt::SkipEmptyParts);
+        QStringList cmdlist = QString(buffer).trimmed().split(" ", Qt::SkipEmptyParts);
 #endif
 
-    if (cmdlist.size() == 0)
-        return;
+        if (cmdlist.size() == 0)
+            continue;
 
-    QString cmd = cmdlist[0];
-    if (cmd == "f")
-        answer = cmd_get_freq();
-    else if (cmd == "F")
-        answer = cmd_set_freq(cmdlist);
-    else if (cmd == "m")
-        answer = cmd_get_mode();
-    else if (cmd == "M")
-        answer = cmd_set_mode(cmdlist);
-    else if (cmd == "l")
-        answer = cmd_get_level(cmdlist);
-    else if (cmd == "L")
-        answer = cmd_set_level(cmdlist);
-    else if (cmd == "u")
-        answer = cmd_get_func(cmdlist);
-    else if (cmd == "U")
-        answer = cmd_set_func(cmdlist);
-    else if (cmd == "v")
-        answer = cmd_get_vfo();
-    else if (cmd == "V")
-        answer = cmd_set_vfo(cmdlist);
-    else if (cmd == "s")
-        answer = cmd_get_split_vfo();
-    else if (cmd == "S")
-        answer = cmd_set_split_vfo();
-    else if (cmd == "p")
-        answer = cmd_get_param(cmdlist);
-    else if (cmd == "_")
-        answer = cmd_get_info();
-    else if (cmd == "AOS")
-        answer = cmd_AOS();
-    else if (cmd == "LOS")
-        answer = cmd_LOS();
-    else if (cmd == "LNB_LO")
-        answer = cmd_lnb_lo(cmdlist);
-    else if (cmd == "\\dump_state")
-        answer = cmd_dump_state();
-    else if (cmd == "q" || cmd == "Q")
-    {
-        // FIXME: for now we assume 'close' command
-        rc_socket->close();
-        rc_socket->deleteLater();
-        rc_socket = 0;
-        return;
-    }
-    else
-    {
-        // print unknown command and respond with an error
-        qWarning() << "Unknown remote command:" << cmdlist;
-        answer = QString("RPRT 1\n");
-    }
+        QString cmd = cmdlist[0];
+        if (cmd == "f")
+            answer = cmd_get_freq();
+        else if (cmd == "F")
+            answer = cmd_set_freq(cmdlist);
+        else if (cmd == "m")
+            answer = cmd_get_mode();
+        else if (cmd == "M")
+            answer = cmd_set_mode(cmdlist);
+        else if (cmd == "l")
+            answer = cmd_get_level(cmdlist);
+        else if (cmd == "L")
+            answer = cmd_set_level(cmdlist);
+        else if (cmd == "u")
+            answer = cmd_get_func(cmdlist);
+        else if (cmd == "U")
+            answer = cmd_set_func(cmdlist);
+        else if (cmd == "v")
+            answer = cmd_get_vfo();
+        else if (cmd == "V")
+            answer = cmd_set_vfo(cmdlist);
+        else if (cmd == "s")
+            answer = cmd_get_split_vfo();
+        else if (cmd == "S")
+            answer = cmd_set_split_vfo();
+        else if (cmd == "p")
+            answer = cmd_get_param(cmdlist);
+        else if (cmd == "_")
+            answer = cmd_get_info();
+        else if (cmd == "AOS")
+            answer = cmd_AOS();
+        else if (cmd == "LOS")
+            answer = cmd_LOS();
+        else if (cmd == "LNB_LO")
+            answer = cmd_lnb_lo(cmdlist);
+        else if (cmd == "\\chk_vfo")
+            answer = QString("0\n");
+        else if (cmd == "\\dump_state")
+            answer = cmd_dump_state();
+        else if (cmd == "\\get_powerstat")
+            answer = QString("1\n");
+        else if (cmd == "q" || cmd == "Q")
+        {
+            // FIXME: for now we assume 'close' command
+            rc_socket->close();
+            rc_socket->deleteLater();
+            rc_socket = 0;
+            return;
+        }
+        else
+        {
+            // print unknown command and respond with an error
+            qWarning() << "Unknown remote command:" << cmdlist;
+            answer = QString("RPRT 1\n");
+        }
 
-    rc_socket->write(answer.toLatin1());
+        rc_socket->write(answer.toLatin1());
+    }
 }
 
 /*! \brief Slot called when the receiver is tuned to a new frequency.
@@ -351,6 +361,18 @@ void RemoteControl::setSquelchLevel(double level)
     squelch_level = level;
 }
 
+/*! \brief Set audio gain (from mainwindow). */
+void RemoteControl::setAudioGain(float gain)
+{
+    audio_gain = gain;
+}
+
+/*! \brief Set audio muted (from mainwindow). */
+void RemoteControl::setAudioMuted(bool muted)
+{
+    is_audio_muted = muted;
+}
+
 /*! \brief Start audio recorder (from mainwindow). */
 void RemoteControl::startAudioRecorder(QString unused)
 {
@@ -404,7 +426,22 @@ void RemoteControl::setRDSstatus(bool enabled)
 {
     rds_status = enabled;
     rc_program_id = "0000";
+    rds_station = "";
+    rds_radiotext = "";
 }
+
+/*! \brief Set RDS program service (station) name. */
+void RemoteControl::setRdsStation(QString name)
+{
+    rds_station = name;
+}
+
+/*! \brief Set RDS Radiotext. */
+void RemoteControl::setRdsRadiotext(QString text)
+{
+    rds_radiotext = text;
+}
+
 
 /*! \brief Convert mode string to enum (DockRxOpt::rxopt_mode_idx)
  *  \param mode The Hamlib rigctld compatible mode string
@@ -620,15 +657,19 @@ QString RemoteControl::cmd_get_level(QStringList cmdlist)
         QStringList names;
         for(auto &g : gains)
             names.push_back(QString("%1_GAIN").arg(QString::fromStdString(g.name)));
-        answer = QString("SQL STRENGTH %1\n").arg(names.join(" "));
+        answer = QString("SQL STRENGTH AF %1\n").arg(names.join(" "));
     }
     else if (lvl.compare("STRENGTH", Qt::CaseInsensitive) == 0 || lvl.isEmpty())
     {
-        answer = QString("%1\n").arg(signal_level, 0, 'f', 1);
+        answer = QString("%1\n").arg((double)signal_level, 0, 'f', 1);
     }
     else if (lvl.compare("SQL", Qt::CaseInsensitive) == 0)
     {
-        answer = QString("%1\n").arg(squelch_level, 0, 'f', 1);
+        answer = QString("%1\n").arg((double)squelch_level, 0, 'f', 1);
+    }
+    else if (lvl.compare("AF", Qt::CaseInsensitive) == 0)
+    {
+        answer = QString("%1\n").arg((double)audio_gain, 0, 'f', 1);
     }
     else if (lvl.endsWith("_GAIN"))
     {
@@ -662,7 +703,7 @@ QString RemoteControl::cmd_set_level(QStringList cmdlist)
         QStringList names;
         for(auto &g : gains)
             names.push_back(QString("%1_GAIN").arg(QString::fromStdString(g.name)));
-        answer = QString("SQL %1\n").arg(names.join(" "));
+        answer = QString("SQL AF %1\n").arg(names.join(" "));
     }
     else if (lvl.compare("SQL", Qt::CaseInsensitive) == 0)
     {
@@ -673,6 +714,21 @@ QString RemoteControl::cmd_set_level(QStringList cmdlist)
             answer = QString("RPRT 0\n");
             squelch_level = std::max<double>(-150, std::min<double>(0, squelch));
             emit newSquelchLevel(squelch_level);
+        }
+        else
+        {
+            answer = QString("RPRT 1\n");
+        }
+    }
+    else if (lvl.compare("AF", Qt::CaseInsensitive) == 0)
+    {
+        bool ok;
+        float new_audio_gain = cmdlist.value(2, "ERR").toFloat(&ok);
+        if (ok)
+        {
+            answer = QString("RPRT 0\n");
+            new_audio_gain = std::max<float>(-80.0f, std::min<float>(50.0f, new_audio_gain));
+            emit newAudioGain(new_audio_gain);
         }
         else
         {
@@ -705,13 +761,15 @@ QString RemoteControl::cmd_get_func(QStringList cmdlist)
     QString func = cmdlist.value(1, "");
 
     if (func == "?")
-        answer = QString("RECORD DSP RDS\n");
+        answer = QString("RECORD DSP RDS MUTE\n");
     else if (func.compare("RECORD", Qt::CaseInsensitive) == 0)
         answer = QString("%1\n").arg(audio_recorder_status);
     else if (func.compare("DSP", Qt::CaseInsensitive) == 0)
         answer = QString("%1\n").arg(receiver_running);
     else if (func.compare("RDS", Qt::CaseInsensitive) == 0)
         answer = QString("%1\n").arg(rds_status);
+    else if (func.compare("MUTE", Qt::CaseInsensitive) == 0)
+        answer = QString("%1\n").arg(is_audio_muted ? '1' : '0');
     else
         answer = QString("RPRT 1\n");
 
@@ -728,7 +786,7 @@ QString RemoteControl::cmd_set_func(QStringList cmdlist)
 
     if (func == "?")
     {
-        answer = QString("RECORD DSP RDS\n");
+        answer = QString("RECORD DSP RDS MUTE\n");
     }
     else if ((func.compare("RECORD", Qt::CaseInsensitive) == 0) && ok)
     {
@@ -752,6 +810,15 @@ QString RemoteControl::cmd_set_func(QStringList cmdlist)
             emit dspChanged(true);
         else
             emit dspChanged(false);
+
+        answer = QString("RPRT 0\n");
+    }
+    else if (func.compare("MUTE", Qt::CaseInsensitive) == 0)
+    {
+        if (status)
+            emit newAudioMuted(true);
+        else
+            emit newAudioMuted(false);
 
         answer = QString("RPRT 0\n");
     }
@@ -779,9 +846,13 @@ QString RemoteControl::cmd_get_param(QStringList cmdlist)
     QString func = cmdlist.value(1, "");
 
     if (func == "?")
-        answer = QString("RDS_PI\n");
+        answer = QString("RDS_PI RDS_PS_NAME RDS_RADIOTEXT\n");
     else if (func.compare("RDS_PI", Qt::CaseInsensitive) == 0)
         answer = QString("%1\n").arg(rc_program_id);
+    else if (func.compare("RDS_PS_NAME", Qt::CaseInsensitive) == 0)
+        answer = QString("%1\n").arg(rds_station);
+    else if (func.compare("RDS_RADIOTEXT", Qt::CaseInsensitive) == 0)
+        answer = QString("%1\n").arg(rds_radiotext);
     else
         answer = QString("RPRT 1\n");
 

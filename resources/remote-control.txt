@@ -19,24 +19,36 @@ Supported commands:
     Get squelch threshold [dBFS]
  L SQL <sql>
     Set squelch threshold to <sql> [dBFS]
+ l AF
+    Get audio gain [dB]
+ L AF <gain>
+    Set audio gain to <gain> [dB]
  l <gain_name>_GAIN
     Get the value of the gain setting with the name <gain_name>
  L <gain_name>_GAIN <value>
     Set the value of the gain setting with the name <gain_name> to <value>
  p RDS_PI
     Get the RDS PI code (in hexadecimal). Returns 0000 if not applicable.
+ p RDS_PS_NAME
+    Get the RDS Program Service (PS) name
+ p RDS_RADIOTEXT
+    Get the RDS RadioText message
  u RECORD
     Get status of audio recorder
  U RECORD <status>
     Set status of audio recorder to <status>
  u DSP
-    Get DSP status
+    Get DSP (SDR receiver) status
  U DSP <status>
-    Set DSP status to <status>
+    Set DSP (SDR receiver) status to <status>
  u RDS
-    Get RDS decoder to <status>.  Only functions in WFM mode.
+    Get RDS decoder status.  Only functions in WFM mode.
  U RDS <status>
     Set RDS decoder to <status>.  Only functions in WFM mode.
+ u MUTE
+    Get audio mute status
+ U MUTE <status>
+    Set audio mute to <status>
  q|Q
     Close connection
  AOS
@@ -46,8 +58,12 @@ Supported commands:
  LNB_LO [frequency]
     If frequency [Hz] is specified set the LNB LO frequency used for
     display. Otherwise print the current LNB LO frequency [Hz].
+ \chk_vfo
+    Get VFO option status (only usable for hamlib compatibility)
  \dump_state
     Dump state (only usable for hamlib compatibility)
+ \get_powerstat
+    Get power status (only usable for hamlib compatibility)
  v
     Get 'VFO' (only usable for hamlib compatibility)
  V

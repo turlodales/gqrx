@@ -72,6 +72,8 @@ public slots:
     void stopAudioRecorder(void);
     void setRxFrequency(qint64 freq);
     void setWfColormap(const QString &cmap);
+    void setAudioGainDb(float gain);
+    void setAudioMuted(bool muted);
 
 signals:
     /*! \brief Signal emitted when audio gain has changed. Gain is in dB. */
@@ -97,6 +99,9 @@ signals:
 
     /*! \brief FFT rate changed. */
     void fftRateChanged(int fps);
+    
+    /*! \brief Audio mute chenged. */
+    void audioMuted(bool muted);
 
 private slots:
     void on_audioGainSlider_valueChanged(int value);

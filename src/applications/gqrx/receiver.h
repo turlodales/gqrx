@@ -23,13 +23,8 @@
 #ifndef RECEIVER_H
 #define RECEIVER_H
 
-#if GNURADIO_VERSION < 0x030800
-#include <gnuradio/blocks/multiply_const_ff.h>
-#else
-#include <gnuradio/blocks/multiply_const.h>
-#endif
-
 #include <gnuradio/blocks/file_sink.h>
+#include <gnuradio/blocks/multiply_const.h>
 #include <gnuradio/blocks/null_sink.h>
 #include <gnuradio/blocks/wavfile_sink.h>
 #include <gnuradio/blocks/wavfile_source.h>
@@ -110,6 +105,8 @@ public:
         FILTER_SHAPE_SHARP = 2   /*!< Sharp: Transition band is TBD of width. */
     };
 
+    static const unsigned int DEFAULT_FFT_SIZE = 8192;
+
     receiver(const std::string input_device="",
              const std::string audio_device="",
              unsigned int decimation=1);
@@ -164,11 +161,11 @@ public:
     status      set_freq_corr(double ppm);
     float       get_signal_pwr() const;
     void        set_iq_fft_size(int newsize);
-    void        set_iq_fft_window(int window_type);
-    void        get_iq_fft_data(std::complex<float>* fftPoints,
-                                unsigned int &fftsize);
-    void        get_audio_fft_data(std::complex<float>* fftPoints,
-                                   unsigned int &fftsize);
+    unsigned int iq_fft_size(void) const;
+    void        set_iq_fft_window(int window_type, bool normalize_energy);
+    int         get_iq_fft_data(float* fftPoints);
+    int         get_audio_fft_data(float* fftPoints);
+    unsigned int audio_fft_size(void) const;
 
     /* Noise blanker */
     status      set_nb_on(int nbid, bool on);
@@ -274,6 +271,8 @@ private:
 
     gr::blocks::multiply_const_ff::sptr audio_gain0; /*!< Audio gain block. */
     gr::blocks::multiply_const_ff::sptr audio_gain1; /*!< Audio gain block. */
+    gr::blocks::multiply_const_ff::sptr wav_gain0; /*!< WAV file gain block. */
+    gr::blocks::multiply_const_ff::sptr wav_gain1; /*!< WAV file gain block. */
 
     gr::blocks::file_sink::sptr         iq_sink;     /*!< I/Q file sink. */
 

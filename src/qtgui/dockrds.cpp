@@ -54,10 +54,15 @@ void DockRDS::updateRDS(QString text, int type)
     switch (type)
     {
     case 0:
+        if (text != ui->program_information->text()) {
+            // Clear the display if PI has changed
+            ClearTextFields();
+        }
         emit rdsPI(text);
         ui->program_information->setText(text);
         break;
     case 1:
+        emit stationChanged(text);
         ui->station_name->setText(text);
         break;
     case 2:
@@ -70,14 +75,15 @@ void DockRDS::updateRDS(QString text, int type)
         if (str.at(1) == '1') out.append("TA ");
         if (str.at(2) == '0') out.append("Speech ");
         if (str.at(2) == '1') out.append("Music ");
-        if (str.at(3) == '0') out.append("Stereo ");
-        if (str.at(3) == '1') out.append("Mono ");
+        if (str.at(3) == '1') out.append("Stereo ");
+        if (str.at(3) == '0') out.append("Mono ");
         if (str.at(4) == '1') out.append("AH ");
         if (str.at(5) == '1') out.append("CMP ");
-        if (str.at(6) == '1') out.append("stPTY ");
+        if (str.at(6) == '0') out.append("stPTY ");
         ui->flags->setText(QString::fromStdString(out));
         break;
     case 4:
+        emit radiotextChanged(text);
         ui->radiotext->setText(text);
         break;
     case 5:
@@ -101,6 +107,10 @@ void DockRDS::ClearTextFields()
     ui->radiotext->setText("");
     ui->clocktime->setText("");
     ui->alt_freq->setText("");
+
+    emit rdsPI("0000");
+    emit stationChanged("");
+    emit radiotextChanged("");
 }
 
 void DockRDS::showEnabled()

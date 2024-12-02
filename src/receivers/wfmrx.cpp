@@ -26,7 +26,7 @@
 #include <QDebug>
 #include "receivers/wfmrx.h"
 
-#define PREF_QUAD_RATE   240e3 // Nominal channel spacing is 200 kHz
+#define PREF_QUAD_RATE   240e3f // Nominal channel spacing is 200 kHz
 
 wfmrx_sptr make_wfmrx(float quad_rate, float audio_rate)
 {
@@ -42,16 +42,16 @@ wfmrx::wfmrx(float quad_rate, float audio_rate)
 {
     iq_resamp = make_resampler_cc(PREF_QUAD_RATE/d_quad_rate);
 
-    filter = make_rx_filter(PREF_QUAD_RATE, -80000.0, 80000.0, 20000.0);
+    filter = make_rx_filter((double)PREF_QUAD_RATE, -80000.0, 80000.0, 20000.0);
     sql = gr::analog::simple_squelch_cc::make(-150.0, 0.001);
-    meter = make_rx_meter_c(PREF_QUAD_RATE);
+    meter = make_rx_meter_c((double)PREF_QUAD_RATE);
     demod_fm = make_rx_demod_fm(PREF_QUAD_RATE, 75000.0, 0.0);
     stereo = make_stereo_demod(PREF_QUAD_RATE, d_audio_rate, true);
     stereo_oirt = make_stereo_demod(PREF_QUAD_RATE, d_audio_rate, true, true);
     mono = make_stereo_demod(PREF_QUAD_RATE, d_audio_rate, false);
 
     /* create rds blocks but dont connect them */
-    rds = make_rx_rds(PREF_QUAD_RATE);
+    rds = make_rx_rds((double)PREF_QUAD_RATE);
     rds_decoder = gr::rds::decoder::make(0, 0);
     rds_parser = gr::rds::parser::make(0, 0, 0);
     rds_store = make_rx_rds_store();
@@ -88,7 +88,7 @@ bool wfmrx::stop()
 
 void wfmrx::set_quad_rate(float quad_rate)
 {
-    if (std::abs(d_quad_rate-quad_rate) > 0.5)
+    if (std::abs(d_quad_rate-quad_rate) > 0.5f)
     {
         qDebug() << "Changing WFM RX quad rate:"  << d_quad_rate << "->" << quad_rate;
         d_quad_rate = quad_rate;

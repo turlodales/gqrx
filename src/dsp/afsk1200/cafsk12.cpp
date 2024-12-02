@@ -18,7 +18,7 @@
  *
  *      You should have received a copy of the GNU General Public License
  *      along with this program; if not, write to the Free Software
- *      Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 #include <QDebug>
 #include <QTime>
@@ -54,12 +54,12 @@ void CAfsk12::reset()
     for (f = 0, i = 0; i < CORRLEN; i++) {
         corr_mark_i[i] = cos(f);
         corr_mark_q[i] = sin(f);
-        f += 2.0*M_PI*FREQ_MARK/FREQ_SAMP;
+        f += 2*(float)M_PI*FREQ_MARK/FREQ_SAMP;
     }
     for (f = 0, i = 0; i < CORRLEN; i++) {
         corr_space_i[i] = cos(f);
         corr_space_q[i] = sin(f);
-        f += 2.0*M_PI*FREQ_SPACE/FREQ_SAMP;
+        f += 2*(float)M_PI*FREQ_SPACE/FREQ_SAMP;
     }
 
 }
@@ -460,4 +460,3 @@ void CAfsk12::ax25_disp_packet(unsigned char *bp, unsigned int len)
         emit newMessage(message);
     }
 }
-

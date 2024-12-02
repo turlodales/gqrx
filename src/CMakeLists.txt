@@ -12,7 +12,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     else()
         add_subdirectory(osxaudio)
     endif()
-    add_definitions(-DGQRX_OS_MACX)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux|FreeBSD")
     if(${LINUX_AUDIO_BACKEND} MATCHES "Pulseaudio")
         add_subdirectory(pulseaudio)
@@ -111,7 +110,7 @@ if(NOT Gnuradio_VERSION VERSION_LESS "3.10")
         gnuradio::gnuradio-audio
         Volk::volk
     )
-elseif(NOT Gnuradio_VERSION VERSION_LESS "3.8")
+else()
     target_link_libraries(${PROJECT_NAME}
         gnuradio::gnuradio-analog
         gnuradio::gnuradio-blocks
@@ -120,17 +119,15 @@ elseif(NOT Gnuradio_VERSION VERSION_LESS "3.8")
         gnuradio::gnuradio-audio
         Volk::volk
     )
-else()
-    target_link_libraries(${PROJECT_NAME}
-        ${Boost_LIBRARIES}
-        ${GNURADIO_ALL_LIBRARIES}
-        ${VOLK_LIBRARIES}
-    )
 endif()
 
 #build a win32 app, not a console app
 if (WIN32)
-    set(CMAKE_EXE_LINKER_FLAGS "/entry:mainCRTStartup ${CMAKE_EXE_LINKER_FLAGS}")
+    if (MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "/entry:mainCRTStartup ${CMAKE_EXE_LINKER_FLAGS}")
+    else()
+        set(CMAKE_EXE_LINKER_FLAGS "-Wl,-e,mainCRTStartup ${CMAKE_EXE_LINKER_FLAGS}")
+    endif(MSVC)
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE ON)
 endif (WIN32)
 
